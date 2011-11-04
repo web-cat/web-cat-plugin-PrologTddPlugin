@@ -12,7 +12,7 @@
 use strict;
 use English;
 
-my $version     = "1.0";
+my $version     = "1.1";
 my $verbose     = 0;
 my $debug       = 0;
 my $deleteTemps = 0;          # Change to 0 to preserve temp files
@@ -163,12 +163,11 @@ while (<CASES>)
             $_ = '';
         }
 
-        if ($state == IN_EXAMPLE_EXPECTED_RESULT
+        if (($state == IN_EXAMPLE_EXPECTED_RESULT || $state == IN_EXAMPLE_GOAL)
             && $text =~ m/^\s*(\*\s*)?\?-/o)
         {
             pop(@state);
-            push(@state, IN_PLDOC_COMMENT);
-            $state = IN_PLDOC_COMMENT;
+            $state = $state[$#state];
         }
 
         if ($state == IN_PLDOC_COMMENT && $text =~ s/^(\s*(?:\*\s*)?)\?-\s*//o)
@@ -435,6 +434,18 @@ for (my $c = 0; $c <= $#testCases; $c++)
 {
     print INFILE "?- testcase(";
     print INFILE $c + 1, ",\n'", $testCases[$c], "',\n";
+    if ($expectedOutput[$c] eq "")
+    {
+        $expectedOutput[$c] = "true";
+    }
+    elsif ($expectedOutput[$c] eq "false")
+    {
+        $expectedOutput[$c] = "fail";
+    }
+    elsif ($expectedOutput[$c] eq "succeed")
+    {
+        $expectedOutput[$c] = "true";
+    }
     print INFILE "'[", $expectedOutput[$c], "]').\n\n";
 }
 print INFILE<<EOF;
