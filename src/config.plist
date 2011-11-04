@@ -2,8 +2,8 @@
     name       	     = PrologTddPlugin;
     version.major    = 1;
     version.minor    = 6;
-    version.revision = 1;
-    version.date     = 20070423;
+    version.revision = 2;
+    version.date     = 20111104;
     requires         = ( PerlForPlugins );
     provider         = "Virginia Tech Computer Science";
     provider.url     = "http://web-cat.cs.vt.edu/updates";
