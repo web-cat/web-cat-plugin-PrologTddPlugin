@@ -12,10 +12,10 @@
 use strict;
 use English;
 
-my $version     = "1.1";
+my $version     = "1.2";
 my $verbose     = 0;
 my $debug       = 0;
-my $deleteTemps = 0;          # Change to 0 to preserve temp files
+my $deleteTemps = 1;          # Change to 0 to preserve temp files
 
 
 while ($#ARGV >= 0)
@@ -24,7 +24,7 @@ while ($#ARGV >= 0)
     if ($arg eq '-d')
     {
         $debug++;
-        $deleteTemps = 1;
+        $deleteTemps = 0;
     }
     elsif ($arg eq '-v')
     {
@@ -174,6 +174,7 @@ while (<CASES>)
         {
             $goalIndent = (defined $1) ? length($1) : 0;
             push(@state, IN_EXAMPLE_GOAL);
+            $text =~ s,',\\',g;
             push(@testCases, $text);
             push(@expectedOutput, '');
             $case++;
@@ -186,6 +187,7 @@ while (<CASES>)
             if ($thisIndent > $goalIndent)
             {
                 # Continuation of goal
+                $text =~ s,',\\',g;
                 $testCases[$#testCases] .= "\n" . $text;
                 print "    $text\n" if ($verbose);
             }
@@ -200,6 +202,7 @@ while (<CASES>)
                     {
                         $expectedOutput[$#expectedOutput] .= "\n";
                     }
+                    $text =~ s,',\\',g;
                     $expectedOutput[$#expectedOutput] .= $text;
                 }
                 $testCases[$#testCases] =~ s/\.\s*$//so;
@@ -219,6 +222,7 @@ while (<CASES>)
                 {
                     $expectedOutput[$#expectedOutput] .= "\n";
                 }
+                $text =~ s,',\\',g;
                 $expectedOutput[$#expectedOutput] .= $text;
                 print "    $text\n" if ($verbose);
             }
@@ -482,7 +486,10 @@ while (<STUDENT>)
     elsif (/ERROR:/o)
     {
         $errs++;
-        $failures--;
+        if ($failures > 0)
+	{
+	    $failures--;
+	}
     }
     if (/^\./o)
     {

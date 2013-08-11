@@ -11,7 +11,8 @@ use strict;
 use English;
 use File::stat;
 use File::Copy;
-use Proc::Background;
+# use Proc::Background;
+use Win32::Job;
 use Config::Properties::Simple;
 use Web_CAT::Beautifier;
 
@@ -73,7 +74,7 @@ my $coverage                 = "0 0 1";
 
 # From tddpas.pl
 #-----------------------------
-my $version         = "1.1";
+my $version         = "1.2";
 my @testCases       = ();    # test case input
 my @expectedOutput  = ();    # corresponding expected output
 my @caseNos         = ();    # test case number for each output line
@@ -82,10 +83,10 @@ my $deleteTemps     = 0;     # Change to 0 to preserve temp files
 
 # Prolog interpreter to use
 #-----------------------------
-my $prolog = "C:\\Progra~1\\SWI-Prolog\\bin\\plcon.exe";
+my $prolog = "C:\\Progra~1\\SWI-Prolog\\bin\\swipl.exe";
 if ( ! -x $prolog )
 {
-    $prolog = "G:\\SWI-Prolog\\bin\\plcon.exe";
+    $prolog = "G:\\SWI-Prolog\\bin\\swipl.exe";
     if ( ! -x $prolog )
     {
         # assume unix
@@ -407,10 +408,16 @@ close( INFILE );
     # Exec program and collect output
     my $cmdline = $Web_CAT::Utilities::SHELL
         . "$prolog -f $temp_input -t halt.";
-    print $cmdline, "\n" if ($debug);
-    my ($exitcode, $timeout_status) = Proc::Background::timeout_system(
-        $timeout, $cmdline);
-    if ($timeout_status)
+#    print $cmdline, "\n" if ($debug);
+#    my ($exitcode, $timeout_status) = Proc::Background::timeout_system(
+#        $timeout, $cmdline);
+#    if ($timeout_status)
+#    {
+#        $timeout_occurred++;
+#    }
+    my $job = Win32::Job->new;
+    my $pid = $job->spawn("cmd.exe", $cmdline);
+    if (!$job->run($timeout))
     {
         $timeout_occurred++;
     }
@@ -445,7 +452,10 @@ EOF
         elsif ( /ERROR:/o )
         {
             $errs++;
-            $failures--;
+            if ($failures > 0)
+            {
+                $failures--;
+            }
         }
         elsif ( s/^coverage:\s+//o )
         {
@@ -562,6 +572,7 @@ while (<CASES>)
         {
             $goalIndent = (defined $1) ? length($1) : 0;
             push(@state, IN_EXAMPLE_GOAL);
+            $text =~ s,',\\',g;
             push(@testCases, $text);
             push(@expectedOutput, '');
             $case++;
@@ -574,6 +585,7 @@ while (<CASES>)
             if ($thisIndent > $goalIndent)
             {
                 # Continuation of goal
+                $text =~ s,',\\',g;
                 $testCases[$#testCases] .= "\n" . $text;
                 print "    $text\n" if ($verbose);
             }
@@ -588,6 +600,7 @@ while (<CASES>)
                     {
                         $expectedOutput[$#expectedOutput] .= "\n";
                     }
+                    $text =~ s,',\\',g;
                     $expectedOutput[$#expectedOutput] .= $text;
                 }
                 $testCases[$#testCases] =~ s/\.\s*$//so;
@@ -607,6 +620,7 @@ while (<CASES>)
                 {
                     $expectedOutput[$#expectedOutput] .= "\n";
                 }
+                $text =~ s,',\\',g;
                 $expectedOutput[$#expectedOutput] .= $text;
                 print "    $text\n" if ($verbose);
             }
